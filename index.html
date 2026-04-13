@@ -2,123 +2,338 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Validasi Foto</title>
   <style>
-    * { box-sizing: border-box; }
+    * { 
+      box-sizing: border-box; 
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    html, body { 
+      height: 100%; 
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    
     body { 
-      font-family: 'Segoe UI', Arial, sans-serif; 
-      padding: 20px; 
-      max-width: 600px; 
-      margin: 0 auto;
-      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      flex-direction: column;
     }
-    .container {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+    .header {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      padding: 12px 16px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+      z-index: 10;
     }
-    h2 { margin-top: 0; color: #333; }
-    label { font-weight: 600; color: #555; }
-    select { 
-      padding: 10px; 
-      font-size: 16px; 
-      width: 100%;
+
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header select {
       margin-top: 8px;
-      border: 2px solid #ddd;
-      border-radius: 6px;
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 15px;
+      background: white;
+      color: #2d3748;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
     }
-    #app { 
-      display: none; 
-      margin-top: 20px; 
-      text-align: center;
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 12px;
+      overflow: hidden;
     }
-    #photo { 
-      max-width: 100%; 
-      max-height: 400px;
-      border-radius: 8px; 
-      margin: 15px 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .photo-container {
+      flex: 1;
+      background: #f7fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      position: relative;
+      min-height: 0;
+    }
+
+    #photo {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       display: none;
     }
+
     #photo.show { display: block; }
-    .btn-group {
+
+    .photo-placeholder {
+      position: absolute;
       display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 15px;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #a0aec0;
     }
-    button { 
-      padding: 12px 30px; 
-      cursor: pointer; 
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-    button:active { transform: translateY(0); }
-    .btn-benar { background: #4CAF50; color: white; }
-    .btn-benar:hover { background: #45a049; }
-    .btn-salah { background: #f44336; color: white; }
-    .btn-salah:hover { background: #da190b; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
-    #info { 
-      margin: 15px 0; 
-      font-weight: 600;
-      padding: 12px;
-      border-radius: 6px;
-      background: #e3f2fd;
-      color: #1565c0;
-    }
-    #info.error { background: #ffebee; color: #c62828; }
-    #info.success { background: #e8f5e9; color: #2e7d32; }
-    .counter {
-      text-align: center;
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-    .loading {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #3498db;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #667eea;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-left: 10px;
-      vertical-align: middle;
+      animation: spin 0.8s linear infinite;
     }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .done {
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .info-bar {
+      padding: 12px 16px;
+      background: #f7fafc;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .student-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
+
+    .student-meta {
+      font-size: 13px;
+      color: #718096;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge {
+      background: #667eea;
+      color: white;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .actions {
+      padding: 12px 16px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:active { transform: scale(0.96); }
+
+    .btn-benar {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+    }
+
+    .btn-salah {
+      background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      transform: none !important;
+      cursor: not-allowed;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
       text-align: center;
       padding: 40px;
     }
-    .done h2 { color: #4CAF50; font-size: 32px; }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.9;
+    }
+
+    .done-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.98);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+      z-index: 100;
+    }
+
+    .done-screen.show { display: flex; }
+
+    .done-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: white;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(72, 187, 120, 0.3);
+    }
+
+    .done-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 8px;
+    }
+
+    .done-text {
+      color: #718096;
+      margin-bottom: 32px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .error-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #e53e3e;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 200;
+    }
+
+    .error-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>📷 Validasi Foto Siswa</h2>
-    
-    <label>Pilih Kelas:</label>
+  <div class="header">
+    <h1>📷 Validasi Foto</h1>
     <select id="kelasSelect">
-      <option value="">-- Pilih Kelas --</option>
+      <option value="">Pilih Kelas</option>
     </select>
+  </div>
 
-    <div id="app">
-      <div class="counter" id="counter"></div>
-      <div id="info">Memuat...</div>
-      <img id="photo" alt="Foto Siswa">
-      <div class="btn-group">
-        <button class="btn-benar" id="btnBenar" onclick="benar()">✅ Benar</button>
-        <button class="btn-salah" id="btnSalah" onclick="salah()">❌ Salah</button>
+  <div class="main" id="mainContainer">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-state-icon">👆</div>
+      <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Pilih Kelas</div>
+      <div style="opacity: 0.8;">Silakan pilih kelas dari dropdown di atas</div>
+    </div>
+
+    <div class="card" id="app" style="display: none;">
+      <div class="photo-container">
+        <div class="photo-placeholder" id="placeholder">
+          <div class="spinner"></div>
+          <div style="font-size: 14px;">Memuat foto...</div>
+        </div>
+        <img id="photo" alt="Foto Siswa">
+      </div>
+      
+      <div class="info-bar">
+        <div class="student-name" id="studentName">-</div>
+        <div class="student-meta">
+          <span id="studentClass">-</span>
+          <span class="badge" id="counterBadge">1/25</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-benar" id="btnBenar" onclick="handleBenar()">
+          ✅ Benar
+        </button>
+        <button class="btn btn-salah" id="btnSalah" onclick="handleSalah()">
+          ❌ Salah
+        </button>
       </div>
     </div>
   </div>
+
+  <div class="done-screen" id="doneScreen">
+    <div class="done-icon">✓</div>
+    <div class="done-title">Selesai!</div>
+    <div class="done-text">Semua foto sudah divalidasi</div>
+    <button class="btn-primary" onclick="resetApp()">Kembali</button>
+  </div>
+
+  <div class="error-toast" id="errorToast">Error message</div>
 
   <script>
     const API = "https://script.google.com/macros/s/AKfycbzwgwoKQNXSWn7BrwlzZe1XmVlY0JnGgA6CKY7cjVUXols6Oo_7IyBIiuVDmoQh__wO/exec";
@@ -128,13 +343,11 @@
     let currentIndex = 0;
     let isProcessing = false;
 
-    // Initialize
     async function init() {
       try {
         const res = await fetch(API + "?action=validationData");
         allData = await res.json();
-        console.log("Loaded:", allData.length, "students");
-
+        
         const classes = [...new Set(allData.map(d => String(d.kelas || "").trim()))].sort();
         const select = document.getElementById("kelasSelect");
         
@@ -147,81 +360,74 @@
 
         select.addEventListener("change", startValidation);
       } catch (err) {
-        console.error("Init error:", err);
-        alert("Gagal memuat data. Refresh halaman.");
+        showError("Gagal memuat data");
+        console.error(err);
       }
     }
 
     function startValidation() {
       const selectedClass = document.getElementById("kelasSelect").value;
-      if (!selectedClass) return;
+      if (!selectedClass) {
+        document.getElementById('emptyState').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+        return;
+      }
 
       currentList = allData.filter(d => String(d.kelas || "").trim() === selectedClass);
       currentIndex = 0;
 
-      document.getElementById("app").style.display = "block";
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
       showCurrent();
     }
 
     function showCurrent() {
       if (currentIndex >= currentList.length) {
-        document.getElementById("app").innerHTML = `
-          <div class="done">
-            <h2>✅ Selesai!</h2>
-            <p>Semua foto di kelas ini sudah divalidasi.</p>
-            <button onclick="location.reload()" style="margin-top: 20px;">Kembali</button>
-          </div>
-        `;
+        document.getElementById('doneScreen').classList.add('show');
         return;
       }
 
       const student = currentList[currentIndex];
       const img = document.getElementById("photo");
-      const info = document.getElementById("info");
-      const counter = document.getElementById("counter");
+      const placeholder = document.getElementById("placeholder");
 
-      // Reset state
+      // Reset
       img.classList.remove("show");
-      img.src = "";
-      info.className = "";
-      info.innerHTML = `Memuat... <span class="loading"></span>`;
-      counter.textContent = `${currentIndex + 1} dari ${currentList.length} siswa`;
+      placeholder.style.display = "flex";
+      
+      document.getElementById("studentName").textContent = student.nama;
+      document.getElementById("studentClass").textContent = student.kelas;
+      document.getElementById("counterBadge").textContent = `${currentIndex + 1}/${currentList.length}`;
 
       const photoUrl = String(student.foto || "").trim();
-      console.log("Loading photo:", photoUrl);
 
       if (!photoUrl) {
-        info.className = "error";
-        info.textContent = `⚠️ ${student.nama} - Tidak ada link foto`;
+        placeholder.innerHTML = `<div style="color: #e53e3e;">📷 Foto tidak tersedia</div>`;
         return;
       }
 
-      // Preload image
       const tester = new Image();
       tester.onload = () => {
         img.src = photoUrl;
         img.classList.add("show");
-        info.className = "success";
-        info.textContent = `${student.nama} • ${student.kelas}`;
+        placeholder.style.display = "none";
       };
       tester.onerror = () => {
-        info.className = "error";
-        info.textContent = `❌ ${student.nama} - Gagal memuat foto`;
-        console.error("Failed loading:", photoUrl);
+        placeholder.innerHTML = `<div style="color: #e53e3e;">❌ Gagal memuat foto</div>`;
       };
       tester.src = photoUrl;
     }
 
-    async function benar() {
+    async function handleBenar() {
       if (isProcessing) return;
       await submitValidation("valid");
     }
 
-    async function salah() {
+    async function handleSalah() {
       if (isProcessing) return;
       
-      const correctName = prompt(`Nama sebenarnya untuk foto ini?\n(Nama di data: ${currentList[currentIndex].nama})`);
-      if (!correctName || !correctName.trim()) return;
+      const correctName = prompt(`Nama sebenarnya?\n(Data: ${currentList[currentIndex].nama})`);
+      if (!correctName?.trim()) return;
       
       await submitValidation("false", correctName.trim());
     }
@@ -231,35 +437,27 @@
       setButtonsEnabled(false);
 
       const student = currentList[currentIndex];
-      const payload = {
-        action: "submitValidation",
-        type: type,
-        row: student.row,
-        input: inputName
-      };
-
-      console.log("Submitting:", payload);
-
+      
       try {
         const res = await fetch(API, {
           method: "POST",
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            action: "submitValidation",
+            type: type,
+            row: student.row,
+            input: inputName
+          })
         });
         
         const result = await res.json();
-        console.log("Server response:", result);
+        if (result.status !== "ok") throw new Error(result.message);
 
-        if (result.status !== "ok") {
-          throw new Error(result.message || "Server error");
-        }
-
-        // Success - move to next
         currentIndex++;
         showCurrent();
         
       } catch (err) {
-        console.error("Submit error:", err);
-        alert("Gagal menyimpan: " + err.message);
+        showError("Gagal menyimpan. Coba lagi.");
+        console.error(err);
       } finally {
         isProcessing = false;
         setButtonsEnabled(true);
@@ -271,7 +469,22 @@
       document.getElementById("btnSalah").disabled = !enabled;
     }
 
-    // Start
+    function showError(msg) {
+      const toast = document.getElementById("errorToast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3000);
+    }
+
+    function resetApp() {
+      document.getElementById('doneScreen').classList.remove('show');
+      document.getElementById('kelasSelect').value = "";
+      document.getElementById('emptyState').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      currentList = [];
+      currentIndex = 0;
+    }
+
     init();
   </script>
 </body>
