@@ -594,7 +594,7 @@
         const percent = (loaded / total) * 100;
         document.getElementById('progressBar').style.width = percent + '%';
         document.getElementById('progressText').textContent = `${loaded} / ${total}`;
-        document.getElementById('preloadSubtext').textContent = `${(totalBytes / 1024 / 1024).toFixed(2)} MB diunduh`;
+        document.getElementById('preloadSubtext').textContent = `${(totalBytes / 1024 / 1024).toFixed(2)} MB terdownload`;
       };
 
       updateProgress();
