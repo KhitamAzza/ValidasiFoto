@@ -1,66 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Validasi Siswa</title>
-
-<style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #111;
-  color: white;
-  text-align: center;
-}
-
-.container {
-  padding: 15px;
-}
-
-img {
-  width: 100%;
-  max-height: 300px;
-  object-fit: contain;
-  border-radius: 10px;
-  background: #222;
-}
-
-button {
-  width: 45%;
-  padding: 15px;
-  margin: 10px;
-  font-size: 18px;
-  border-radius: 10px;
-  border: none;
-}
-
-.true { background: green; }
-.false { background: red; }
-
-select {
-  padding: 10px;
-  font-size: 16px;
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-  <h3>Pilih Kelas</h3>
-  <select id="kelasSelect"></select>
-
-  <div id="app" style="display:none;">
-    <img id="photo">
-    <p id="info"></p>
-
-    <button class="false" onclick="salah()">SALAH</button>
-    <button class="true" onclick="benar()">BENAR</button>
-  </div>
-
-</div>
-
 <script>
 
 const API = "https://script.google.com/macros/s/AKfycbzwgwoKQNXSWn7BrwlzZe1XmVlY0JnGgA6CKY7cjVUXols6Oo_7IyBIiuVDmoQh__wO/exec";
@@ -74,7 +11,7 @@ async function load() {
   const res = await fetch(API + "?action=validationData");
   data = await res.json();
 
-  const kelasUnik = [...new Set(data.map(d => d.kelas))];
+  const kelasUnik = [...new Set(data.map(d => (d.kelas || "").toString().trim()))];
 
   const select = document.getElementById("kelasSelect");
 
@@ -88,11 +25,11 @@ async function load() {
   select.onchange = mulai;
 }
 
-// 🔹 START AFTER CHOOSE CLASS
+// 🔹 START
 function mulai() {
   const kelas = document.getElementById("kelasSelect").value;
 
-  list = data.filter(d => d.kelas === kelas);
+  list = data.filter(d => (d.kelas || "").toString().trim() === kelas);
   i = 0;
 
   document.getElementById("app").style.display = "block";
@@ -100,7 +37,7 @@ function mulai() {
   tampil();
 }
 
-// 🔹 SHOW DATA
+// 🔹 SHOW DATA (FIXED)
 function tampil() {
   if (i >= list.length) {
     document.body.innerHTML = "<h2>✅ Selesai</h2>";
@@ -113,20 +50,28 @@ function tampil() {
   const info = document.getElementById("info");
 
   info.innerText = "";
-  img.style.display = "block";
+  img.style.display = "none";
 
-  if (!siswa.foto) {
-    img.style.display = "none";
+  const link = (siswa.foto || "").toString().trim();
+
+  if (!link) {
     info.innerText = "Foto tidak ditemukan";
     return;
   }
 
-  img.src = siswa.foto;
+  // 🔥 PRELOAD IMAGE (IMPORTANT FIX)
+  const tester = new Image();
 
-  img.onerror = () => {
-    img.style.display = "none";
+  tester.onload = () => {
+    img.src = link;
+    img.style.display = "block";
+  };
+
+  tester.onerror = () => {
     info.innerText = "Foto tidak ditemukan";
   };
+
+  tester.src = link;
 }
 
 // 🔹 BENAR
@@ -170,6 +115,3 @@ async function salah() {
 load();
 
 </script>
-
-</body>
-</html>
