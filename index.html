@@ -1,121 +1,151 @@
-<script>
-
-const API = "https://script.google.com/macros/s/AKfycbzwgwoKQNXSWn7BrwlzZe1XmVlY0JnGgA6CKY7cjVUXols6Oo_7IyBIiuVDmoQh__wO/exec";
-
-let data = [];
-let list = [];
-let i = 0;
-
-// 🔹 LOAD DATA
-async function load() {
-  const res = await fetch(API + "?action=validationData");
-  data = await res.json();
-
-  const kelasUnik = [...new Set(data.map(d => (d.kelas || "").toString().trim()))];
-
-  const select = document.getElementById("kelasSelect");
-
-  kelasUnik.forEach(k => {
-    let opt = document.createElement("option");
-    opt.value = k;
-    opt.textContent = k;
-    select.appendChild(opt);
-  });
-
-  select.onchange = mulai;
-}
-
-// 🔹 START
-function mulai() {
-  const kelas = document.getElementById("kelasSelect").value;
-
-  list = data.filter(d => (d.kelas || "").toString().trim() === kelas);
-  i = 0;
-
-  document.getElementById("app").style.display = "block";
-
-  tampil();
-}
-
-// 🔹 SHOW DATA (FIXED)
-function tampil() {
-  if (i >= list.length) {
-    document.body.innerHTML = "<h2>✅ Selesai</h2>";
-    return;
-  }
-
-  const siswa = list[i];
-  const img = document.getElementById("photo");
-  const info = document.getElementById("info");
-
-  // Reset
-  img.src = "";
-  img.style.display = "none";
-  info.innerText = "Loading...";
-
-  const link = (siswa.foto || "").toString().trim();
-  console.log("Photo link:", link); // 🔥 Debug: check browser console
-
-  if (!link) {
-    info.innerText = "⚠️ Link foto kosong di spreadsheet";
-    return;
-  }
-
-  // 🔥 PRELOAD IMAGE
-  const tester = new Image();
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Validasi Foto</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+    #app { display: none; margin-top: 20px; }
+    #photo { max-width: 100%; border-radius: 8px; margin: 10px 0; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 16px; }
+    .benar { background: #4CAF50; color: white; border: none; border-radius: 4px; }
+    .salah { background: #f44336; color: white; border: none; border-radius: 4px; }
+    #info { margin: 10px 0; font-weight: bold; }
+    select { padding: 8px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>📷 Validasi Foto Siswa</h2>
   
-  tester.onload = () => {
-    img.src = link;
-    img.style.display = "block";
-    info.innerText = `${siswa.nama} (${siswa.kelas})`;
-  };
+  <label>Pilih Kelas:</label><br>
+  <select id="kelasSelect">
+    <option value="">-- Pilih Kelas --</option>
+  </select>
 
-  tester.onerror = () => {
-    info.innerHTML = `❌ Gagal memuat foto<br><small>${link.substring(0, 50)}...</small>`;
-    console.error("Failed to load:", link);
-  };
+  <div id="app">
+    <div id="info"></div>
+    <img id="photo" alt="Foto Siswa">
+    <br>
+    <button class="benar" onclick="benar()">✅ Benar</button>
+    <button class="salah" onclick="salah()">❌ Salah</button>
+  </div>
 
-  tester.src = link;
-}
+  <!-- 🔥 SCRIPT AT THE END OF BODY -->
+  <script>
+    const API = "https://script.google.com/macros/s/AKfycbzwgwoKQNXSWn7BrwlzZe1XmVlY0JnGgA6CKY7cjVUXols6Oo_7IyBIiuVDmoQh__wO/exec";
+    
+    let data = [];
+    let list = [];
+    let i = 0;
 
-// 🔹 BENAR
-async function benar() {
-  const siswa = list[i];
+    // 🔹 LOAD DATA
+    async function load() {
+      try {
+        const res = await fetch(API + "?action=validationData");
+        data = await res.json();
+        console.log("Loaded data:", data.length, "students");
 
-  await fetch(API, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "submitValidation",
-      type: "valid",
-      row: siswa.row
-    })
-  });
+        const kelasUnik = [...new Set(data.map(d => (d.kelas || "").toString().trim()))].sort();
+        const select = document.getElementById("kelasSelect");
 
-  i++;
-  tampil();
-}
+        kelasUnik.forEach(k => {
+          let opt = document.createElement("option");
+          opt.value = k;
+          opt.textContent = k;
+          select.appendChild(opt);
+        });
 
-// 🔹 SALAH
-async function salah() {
-  const nama = prompt("Siapa nama lengkap siswa ini?");
-  if (!nama) return;
+        select.onchange = mulai;
+      } catch (err) {
+        console.error("Load error:", err);
+        alert("Gagal memuat data: " + err.message);
+      }
+    }
 
-  const siswa = list[i];
+    // 🔹 START
+    function mulai() {
+      const kelas = document.getElementById("kelasSelect").value;
+      if (!kelas) return;
 
-  await fetch(API, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "submitValidation",
-      type: "false",
-      row: siswa.row,
-      input: nama
-    })
-  });
+      list = data.filter(d => (d.kelas || "").toString().trim() === kelas);
+      i = 0;
 
-  i++;
-  tampil();
-}
+      document.getElementById("app").style.display = "block";
+      tampil();
+    }
 
-load();
+    // 🔹 SHOW DATA
+    function tampil() {
+      if (i >= list.length) {
+        document.getElementById("app").innerHTML = "<h2>✅ Selesai</h2>";
+        return;
+      }
 
-</script>
+      const siswa = list[i];
+      const img = document.getElementById("photo");
+      const info = document.getElementById("info");
+
+      img.style.display = "none";
+      img.src = "";
+      info.innerText = `Loading... ${siswa.nama} (${siswa.kelas})`;
+
+      const link = (siswa.foto || "").toString().trim();
+      console.log("Photo link:", link);
+
+      if (!link) {
+        info.innerText = `⚠️ ${siswa.nama} - Foto tidak ditemukan`;
+        return;
+      }
+
+      const tester = new Image();
+      tester.onload = () => {
+        img.src = link;
+        img.style.display = "block";
+        info.innerText = `${siswa.nama} (${siswa.kelas})`;
+      };
+      tester.onerror = () => {
+        info.innerText = `❌ ${siswa.nama} - Gagal memuat foto`;
+        console.error("Failed:", link);
+      };
+      tester.src = link;
+    }
+
+    // 🔹 BENAR
+    async function benar() {
+      const siswa = list[i];
+      await fetch(API, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "submitValidation",
+          type: "valid",
+          row: siswa.row
+        })
+      });
+      i++;
+      tampil();
+    }
+
+    // 🔹 SALAH
+    async function salah() {
+      const nama = prompt("Siapa nama lengkap siswa ini?");
+      if (!nama) return;
+
+      const siswa = list[i];
+      await fetch(API, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "submitValidation",
+          type: "false",
+          row: siswa.row,
+          input: nama
+        })
+      });
+      i++;
+      tampil();
+    }
+
+    // 🔥 START AFTER DOM IS READY
+    load();
+  </script>
+</body>
+</html>
