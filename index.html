@@ -2,150 +2,277 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Validasi Foto</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
-    #app { display: none; margin-top: 20px; }
-    #photo { max-width: 100%; border-radius: 8px; margin: 10px 0; }
-    button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 16px; }
-    .benar { background: #4CAF50; color: white; border: none; border-radius: 4px; }
-    .salah { background: #f44336; color: white; border: none; border-radius: 4px; }
-    #info { margin: 10px 0; font-weight: bold; }
-    select { padding: 8px; font-size: 16px; }
+    * { box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Arial, sans-serif; 
+      padding: 20px; 
+      max-width: 600px; 
+      margin: 0 auto;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 { margin-top: 0; color: #333; }
+    label { font-weight: 600; color: #555; }
+    select { 
+      padding: 10px; 
+      font-size: 16px; 
+      width: 100%;
+      margin-top: 8px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+    }
+    #app { 
+      display: none; 
+      margin-top: 20px; 
+      text-align: center;
+    }
+    #photo { 
+      max-width: 100%; 
+      max-height: 400px;
+      border-radius: 8px; 
+      margin: 15px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: none;
+    }
+    #photo.show { display: block; }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+    button { 
+      padding: 12px 30px; 
+      cursor: pointer; 
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    button:active { transform: translateY(0); }
+    .btn-benar { background: #4CAF50; color: white; }
+    .btn-benar:hover { background: #45a049; }
+    .btn-salah { background: #f44336; color: white; }
+    .btn-salah:hover { background: #da190b; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+    #info { 
+      margin: 15px 0; 
+      font-weight: 600;
+      padding: 12px;
+      border-radius: 6px;
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+    #info.error { background: #ffebee; color: #c62828; }
+    #info.success { background: #e8f5e9; color: #2e7d32; }
+    .counter {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .done {
+      text-align: center;
+      padding: 40px;
+    }
+    .done h2 { color: #4CAF50; font-size: 32px; }
   </style>
 </head>
 <body>
-  <h2>📷 Validasi Foto Siswa</h2>
-  
-  <label>Pilih Kelas:</label><br>
-  <select id="kelasSelect">
-    <option value="">-- Pilih Kelas --</option>
-  </select>
+  <div class="container">
+    <h2>📷 Validasi Foto Siswa</h2>
+    
+    <label>Pilih Kelas:</label>
+    <select id="kelasSelect">
+      <option value="">-- Pilih Kelas --</option>
+    </select>
 
-  <div id="app">
-    <div id="info"></div>
-    <img id="photo" alt="Foto Siswa">
-    <br>
-    <button class="benar" onclick="benar()">✅ Benar</button>
-    <button class="salah" onclick="salah()">❌ Salah</button>
+    <div id="app">
+      <div class="counter" id="counter"></div>
+      <div id="info">Memuat...</div>
+      <img id="photo" alt="Foto Siswa">
+      <div class="btn-group">
+        <button class="btn-benar" id="btnBenar" onclick="benar()">✅ Benar</button>
+        <button class="btn-salah" id="btnSalah" onclick="salah()">❌ Salah</button>
+      </div>
+    </div>
   </div>
 
-  <!-- 🔥 SCRIPT AT THE END OF BODY -->
   <script>
     const API = "https://script.google.com/macros/s/AKfycbzwgwoKQNXSWn7BrwlzZe1XmVlY0JnGgA6CKY7cjVUXols6Oo_7IyBIiuVDmoQh__wO/exec";
     
-    let data = [];
-    let list = [];
-    let i = 0;
+    let allData = [];
+    let currentList = [];
+    let currentIndex = 0;
+    let isProcessing = false;
 
-    // 🔹 LOAD DATA
-    async function load() {
+    // Initialize
+    async function init() {
       try {
         const res = await fetch(API + "?action=validationData");
-        data = await res.json();
-        console.log("Loaded data:", data.length, "students");
+        allData = await res.json();
+        console.log("Loaded:", allData.length, "students");
 
-        const kelasUnik = [...new Set(data.map(d => (d.kelas || "").toString().trim()))].sort();
+        const classes = [...new Set(allData.map(d => String(d.kelas || "").trim()))].sort();
         const select = document.getElementById("kelasSelect");
-
-        kelasUnik.forEach(k => {
-          let opt = document.createElement("option");
-          opt.value = k;
-          opt.textContent = k;
+        
+        classes.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c;
+          opt.textContent = c;
           select.appendChild(opt);
         });
 
-        select.onchange = mulai;
+        select.addEventListener("change", startValidation);
       } catch (err) {
-        console.error("Load error:", err);
-        alert("Gagal memuat data: " + err.message);
+        console.error("Init error:", err);
+        alert("Gagal memuat data. Refresh halaman.");
       }
     }
 
-    // 🔹 START
-    function mulai() {
-      const kelas = document.getElementById("kelasSelect").value;
-      if (!kelas) return;
+    function startValidation() {
+      const selectedClass = document.getElementById("kelasSelect").value;
+      if (!selectedClass) return;
 
-      list = data.filter(d => (d.kelas || "").toString().trim() === kelas);
-      i = 0;
+      currentList = allData.filter(d => String(d.kelas || "").trim() === selectedClass);
+      currentIndex = 0;
 
       document.getElementById("app").style.display = "block";
-      tampil();
+      showCurrent();
     }
 
-    // 🔹 SHOW DATA
-    function tampil() {
-      if (i >= list.length) {
-        document.getElementById("app").innerHTML = "<h2>✅ Selesai</h2>";
+    function showCurrent() {
+      if (currentIndex >= currentList.length) {
+        document.getElementById("app").innerHTML = `
+          <div class="done">
+            <h2>✅ Selesai!</h2>
+            <p>Semua foto di kelas ini sudah divalidasi.</p>
+            <button onclick="location.reload()" style="margin-top: 20px;">Kembali</button>
+          </div>
+        `;
         return;
       }
 
-      const siswa = list[i];
+      const student = currentList[currentIndex];
       const img = document.getElementById("photo");
       const info = document.getElementById("info");
+      const counter = document.getElementById("counter");
 
-      img.style.display = "none";
+      // Reset state
+      img.classList.remove("show");
       img.src = "";
-      info.innerText = `Loading... ${siswa.nama} (${siswa.kelas})`;
+      info.className = "";
+      info.innerHTML = `Memuat... <span class="loading"></span>`;
+      counter.textContent = `${currentIndex + 1} dari ${currentList.length} siswa`;
 
-      const link = (siswa.foto || "").toString().trim();
-      console.log("Photo link:", link);
+      const photoUrl = String(student.foto || "").trim();
+      console.log("Loading photo:", photoUrl);
 
-      if (!link) {
-        info.innerText = `⚠️ ${siswa.nama} - Foto tidak ditemukan`;
+      if (!photoUrl) {
+        info.className = "error";
+        info.textContent = `⚠️ ${student.nama} - Tidak ada link foto`;
         return;
       }
 
+      // Preload image
       const tester = new Image();
       tester.onload = () => {
-        img.src = link;
-        img.style.display = "block";
-        info.innerText = `${siswa.nama} (${siswa.kelas})`;
+        img.src = photoUrl;
+        img.classList.add("show");
+        info.className = "success";
+        info.textContent = `${student.nama} • ${student.kelas}`;
       };
       tester.onerror = () => {
-        info.innerText = `❌ ${siswa.nama} - Gagal memuat foto`;
-        console.error("Failed:", link);
+        info.className = "error";
+        info.textContent = `❌ ${student.nama} - Gagal memuat foto`;
+        console.error("Failed loading:", photoUrl);
       };
-      tester.src = link;
+      tester.src = photoUrl;
     }
 
-    // 🔹 BENAR
     async function benar() {
-      const siswa = list[i];
-      await fetch(API, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "submitValidation",
-          type: "valid",
-          row: siswa.row
-        })
-      });
-      i++;
-      tampil();
+      if (isProcessing) return;
+      await submitValidation("valid");
     }
 
-    // 🔹 SALAH
     async function salah() {
-      const nama = prompt("Siapa nama lengkap siswa ini?");
-      if (!nama) return;
-
-      const siswa = list[i];
-      await fetch(API, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "submitValidation",
-          type: "false",
-          row: siswa.row,
-          input: nama
-        })
-      });
-      i++;
-      tampil();
+      if (isProcessing) return;
+      
+      const correctName = prompt(`Nama sebenarnya untuk foto ini?\n(Nama di data: ${currentList[currentIndex].nama})`);
+      if (!correctName || !correctName.trim()) return;
+      
+      await submitValidation("false", correctName.trim());
     }
 
-    // 🔥 START AFTER DOM IS READY
-    load();
+    async function submitValidation(type, inputName = "") {
+      isProcessing = true;
+      setButtonsEnabled(false);
+
+      const student = currentList[currentIndex];
+      const payload = {
+        action: "submitValidation",
+        type: type,
+        row: student.row,
+        input: inputName
+      };
+
+      console.log("Submitting:", payload);
+
+      try {
+        const res = await fetch(API, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await res.json();
+        console.log("Server response:", result);
+
+        if (result.status !== "ok") {
+          throw new Error(result.message || "Server error");
+        }
+
+        // Success - move to next
+        currentIndex++;
+        showCurrent();
+        
+      } catch (err) {
+        console.error("Submit error:", err);
+        alert("Gagal menyimpan: " + err.message);
+      } finally {
+        isProcessing = false;
+        setButtonsEnabled(true);
+      }
+    }
+
+    function setButtonsEnabled(enabled) {
+      document.getElementById("btnBenar").disabled = !enabled;
+      document.getElementById("btnSalah").disabled = !enabled;
+    }
+
+    // Start
+    init();
   </script>
 </body>
 </html>
