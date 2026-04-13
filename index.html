@@ -45,30 +45,34 @@ function tampil() {
   }
 
   const siswa = list[i];
-
   const img = document.getElementById("photo");
   const info = document.getElementById("info");
 
-  info.innerText = "";
+  // Reset
+  img.src = "";
   img.style.display = "none";
+  info.innerText = "Loading...";
 
   const link = (siswa.foto || "").toString().trim();
+  console.log("Photo link:", link); // 🔥 Debug: check browser console
 
   if (!link) {
-    info.innerText = "Foto tidak ditemukan";
+    info.innerText = "⚠️ Link foto kosong di spreadsheet";
     return;
   }
 
-  // 🔥 PRELOAD IMAGE (IMPORTANT FIX)
+  // 🔥 PRELOAD IMAGE
   const tester = new Image();
-
+  
   tester.onload = () => {
     img.src = link;
     img.style.display = "block";
+    info.innerText = `${siswa.nama} (${siswa.kelas})`;
   };
 
   tester.onerror = () => {
-    info.innerText = "Foto tidak ditemukan";
+    info.innerHTML = `❌ Gagal memuat foto<br><small>${link.substring(0, 50)}...</small>`;
+    console.error("Failed to load:", link);
   };
 
   tester.src = link;
