@@ -173,6 +173,17 @@
       padding: 16px;
       position: relative;
       min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Instagram-style swipe container */
+    .photo-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #photo {
@@ -183,6 +194,85 @@
       object-fit: contain;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    }
+
+    /* Swipe animations */
+    #photo.swipe-left {
+      transform: translateX(-100%) rotate(-5deg);
+      opacity: 0;
+    }
+
+    #photo.swipe-right {
+      transform: translateX(100%) rotate(5deg);
+      opacity: 0;
+    }
+
+    #photo.swipe-enter {
+      animation: swipeEnter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes swipeEnter {
+      from {
+        transform: translateX(var(--enter-direction, 100%)) scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Checkmark popup animation */
+    .checkmark-popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      width: 100px;
+      height: 100px;
+      background: rgba(72, 187, 120, 0.95);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      color: white;
+      pointer-events: none;
+      z-index: 20;
+      box-shadow: 0 8px 32px rgba(72, 187, 120, 0.4);
+    }
+
+    .checkmark-popup.show {
+      animation: popUp 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes popUp {
+      0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+      }
+    }
+
+    /* Drag feedback */
+    .dragging {
+      transition: none !important;
+    }
+
+    .dragging-left {
+      transform: translateX(-30px) rotate(-3deg) !important;
+    }
+
+    .dragging-right {
+      transform: translateX(30px) rotate(3deg) !important;
     }
 
     .nav-hint {
@@ -196,6 +286,7 @@
       opacity: 0;
       transition: opacity 0.2s;
       pointer-events: none;
+      z-index: 10;
     }
 
     .nav-hint.prev { left: 8px; }
@@ -476,7 +567,12 @@
     <div class="card" id="validationCard">
       <div class="photo-container" id="photoContainer">
         <div class="nav-hint prev" id="hintPrev">‹</div>
-        <img id="photo" alt="Foto Siswa">
+        
+        <div class="photo-wrapper">
+          <img id="photo" alt="Foto Siswa">
+          <div class="checkmark-popup" id="checkmarkPopup">✓</div>
+        </div>
+        
         <div class="nav-hint next" id="hintNext">›</div>
       </div>
       
@@ -535,11 +631,73 @@
     
     let allData = [];
     let currentClass = [];
-    let preloadedPhotos = new Map(); // row -> blobUrl
-    let validationResults = new Map(); // row -> {type, input}
+    let preloadedPhotos = new Map();
+    let validationResults = new Map();
     let currentIndex = 0;
     let isProcessing = false;
     let touchStartX = 0;
+    let touchStartY = 0;
+    let isDragging = false;
+
+    // Audio context for sound effects
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    // Initialize audio on first user interaction
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Generate beep sound using Web Audio API (no external files)
+    function playBeep(frequency = 800, duration = 0.1, type = 'sine') {
+      if (!audioCtx) return;
+      
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.frequency.value = frequency;
+      oscillator.type = type;
+      
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+      
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + duration);
+    }
+
+    // Sound effects
+    const sounds = {
+      correct: () => {
+        // Happy ascending beeps
+        setTimeout(() => playBeep(523.25, 0.08), 0); // C5
+        setTimeout(() => playBeep(659.25, 0.08), 50); // E5
+        setTimeout(() => playBeep(783.99, 0.15), 100); // G5
+      },
+      wrong: () => {
+        // Low descending beeps
+        setTimeout(() => playBeep(300, 0.1), 0);
+        setTimeout(() => playBeep(250, 0.15), 100);
+      },
+      swipe: () => {
+        // Quick swoosh
+        playBeep(400, 0.05, 'triangle');
+      },
+      finish: () => {
+        // Victory arpeggio
+        setTimeout(() => playBeep(523.25, 0.1), 0);
+        setTimeout(() => playBeep(659.25, 0.1), 100);
+        setTimeout(() => playBeep(783.99, 0.1), 200);
+        setTimeout(() => playBeep(1046.50, 0.3), 300);
+      }
+    };
 
     async function init() {
       try {
@@ -557,6 +715,10 @@
         });
 
         select.addEventListener("change", handleClassSelect);
+        
+        // Init audio on any click/touch
+        document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('touchstart', initAudio, { once: true });
       } catch (err) {
         showError("Gagal memuat data");
         console.error(err);
@@ -599,7 +761,6 @@
 
       updateProgress();
 
-      // Load sequentially for smoother progress bar
       for (const student of currentClass) {
         try {
           const photoUrl = String(student.foto || "").trim();
@@ -619,7 +780,7 @@
       }
     }
 
-    function showCurrent() {
+    function showCurrent(direction = null) {
       if (currentIndex >= currentClass.length) {
         showSummary();
         return;
@@ -627,16 +788,20 @@
 
       const student = currentClass[currentIndex];
       const img = document.getElementById("photo");
-      
-      // Set photo from preloaded cache or placeholder
       const blobUrl = preloadedPhotos.get(student.row);
+      
+      // Apply enter animation
+      if (direction) {
+        img.style.setProperty('--enter-direction', direction === 'left' ? '100%' : '-100%');
+        img.classList.add('swipe-enter');
+        setTimeout(() => img.classList.remove('swipe-enter'), 300);
+      }
+      
       img.src = blobUrl || "";
       
-      // Update info
       document.getElementById("studentName").textContent = student.nama;
       document.getElementById("studentClass").textContent = student.kelas;
       
-      // Update badge
       const badge = document.getElementById("statusBadge");
       const result = validationResults.get(student.row);
       
@@ -648,40 +813,77 @@
         badge.className = "badge";
       }
 
-      // Show/hide finish button
       const allDone = currentClass.every(s => validationResults.has(s.row));
       document.getElementById("btnFinish").classList.toggle("show", allDone);
 
-      // Update navigation hints
       document.getElementById("hintPrev").classList.toggle("visible", currentIndex > 0);
       document.getElementById("hintNext").classList.toggle("visible", currentIndex < currentClass.length - 1);
     }
 
+    function animateSwipe(direction, callback) {
+      const img = document.getElementById("photo");
+      img.classList.add(direction === 'next' ? 'swipe-left' : 'swipe-right');
+      sounds.swipe();
+      
+      setTimeout(() => {
+        img.classList.remove('swipe-left', 'swipe-right');
+        callback();
+      }, 300);
+    }
+
+    function showCheckmark() {
+      const popup = document.getElementById("checkmarkPopup");
+      popup.classList.remove("show");
+      void popup.offsetWidth; // Trigger reflow
+      popup.classList.add("show");
+      sounds.correct();
+    }
+
     function markValid() {
       if (isProcessing) return;
+      isProcessing = true;
+      
       const student = currentClass[currentIndex];
       validationResults.set(student.row, { type: "valid" });
-      nextStudent();
+      
+      showCheckmark();
+      
+      setTimeout(() => {
+        animateSwipe('next', () => {
+          nextStudent();
+          isProcessing = false;
+        });
+      }, 400);
     }
 
     function markInvalid() {
       if (isProcessing) return;
+      
       const student = currentClass[currentIndex];
       
       const correctName = prompt(`Nama sebenarnya?\n(Data: ${student.nama})`);
       if (!correctName?.trim()) return;
       
+      isProcessing = true;
       validationResults.set(student.row, { 
         type: "false", 
         input: correctName.trim() 
       });
-      nextStudent();
+      
+      sounds.wrong();
+      
+      setTimeout(() => {
+        animateSwipe('next', () => {
+          nextStudent();
+          isProcessing = false;
+        });
+      }, 200);
     }
 
     function nextStudent() {
       if (currentIndex < currentClass.length - 1) {
         currentIndex++;
-        showCurrent();
+        showCurrent('left');
       } else {
         showSummary();
       }
@@ -690,7 +892,7 @@
     function prevStudent() {
       if (currentIndex > 0) {
         currentIndex--;
-        showCurrent();
+        showCurrent('right');
       }
     }
 
@@ -724,6 +926,7 @@
       });
       
       document.getElementById("summaryScreen").classList.add("show");
+      sounds.finish();
     }
 
     function backToValidation() {
@@ -752,7 +955,6 @@
         const result = await res.json();
         if (result.status !== "ok") throw new Error(result.message);
         
-        // Cleanup blob URLs
         preloadedPhotos.forEach(url => URL.revokeObjectURL(url));
         
         alert("✅ Data berhasil dikirim!");
@@ -782,31 +984,67 @@
       setTimeout(() => toast.classList.remove("show"), 3000);
     }
 
-    // Touch/swipe handling for navigation
+    // Enhanced touch handling with drag preview
     const photoContainer = document.getElementById("photoContainer");
+    const photo = document.getElementById("photo");
     
     photoContainer.addEventListener("touchstart", (e) => {
       touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isDragging = true;
+      photo.classList.add('dragging');
+    }, { passive: true });
+
+    photoContainer.addEventListener("touchmove", (e) => {
+      if (!isDragging) return;
+      
+      const touchX = e.touches[0].clientX;
+      const diffX = touchX - touchStartX;
+      
+      // Add visual feedback while dragging
+      if (Math.abs(diffX) > 20) {
+        if (diffX > 0) {
+          photo.classList.add('dragging-right');
+          photo.classList.remove('dragging-left');
+        } else {
+          photo.classList.add('dragging-left');
+          photo.classList.remove('dragging-right');
+        }
+      }
     }, { passive: true });
 
     photoContainer.addEventListener("touchend", (e) => {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      photo.classList.remove('dragging', 'dragging-left', 'dragging-right');
+      
       const touchEndX = e.changedTouches[0].clientX;
       const diff = touchStartX - touchEndX;
       
-      if (Math.abs(diff) > 50) {
-        if (diff > 0) nextStudent(); // Swipe left
-        else prevStudent(); // Swipe right
+      if (Math.abs(diff) > 80) {
+        if (diff > 0) {
+          // Swipe left - next
+          if (currentIndex < currentClass.length - 1) {
+            animateSwipe('next', nextStudent);
+          }
+        } else {
+          // Swipe right - prev
+          if (currentIndex > 0) {
+            animateSwipe('prev', prevStudent);
+          }
+        }
       }
     }, { passive: true });
 
     // Click on hints
     document.getElementById("hintPrev").addEventListener("click", (e) => {
       e.stopPropagation();
-      prevStudent();
+      animateSwipe('prev', prevStudent);
     });
     document.getElementById("hintNext").addEventListener("click", (e) => {
       e.stopPropagation();
-      nextStudent();
+      animateSwipe('next', nextStudent);
     });
 
     init();
