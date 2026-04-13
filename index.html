@@ -18,7 +18,7 @@
     }
     
     body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       display: flex;
       flex-direction: column;
@@ -64,17 +64,105 @@
       padding: 12px;
       gap: 12px;
       overflow: hidden;
+      position: relative;
     }
 
+    /* Preload Screen */
+    .preload-screen {
+      position: absolute;
+      inset: 12px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      text-align: center;
+      z-index: 50;
+    }
+
+    .preload-screen.show { display: flex; }
+
+    .preload-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      animation: bounce 1s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .preload-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 8px;
+    }
+
+    .preload-subtext {
+      font-size: 14px;
+      color: #718096;
+      margin-bottom: 24px;
+    }
+
+    .progress-container {
+      width: 100%;
+      max-width: 280px;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .progress-text {
+      font-size: 14px;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    /* Empty State */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.9;
+    }
+
+    /* Main Card */
     .card {
       background: white;
       border-radius: 16px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      display: flex;
+      display: none;
       flex-direction: column;
       overflow: hidden;
       flex: 1;
     }
+
+    .card.show { display: flex; }
 
     .photo-container {
       flex: 1;
@@ -95,30 +183,24 @@
       object-fit: contain;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      display: none;
     }
 
-    #photo.show { display: block; }
-
-    .photo-placeholder {
+    .nav-hint {
       position: absolute;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      color: #a0aec0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.9);
+      padding: 12px 8px;
+      border-radius: 8px;
+      font-size: 20px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
     }
 
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #e2e8f0;
-      border-top-color: #667eea;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .nav-hint.prev { left: 8px; }
+    .nav-hint.next { right: 8px; }
+    .nav-hint.visible { opacity: 0.7; }
 
     .info-bar {
       padding: 12px 16px;
@@ -148,6 +230,14 @@
       border-radius: 20px;
       font-size: 12px;
       font-weight: 500;
+    }
+
+    .badge.valid {
+      background: #48bb78;
+    }
+
+    .badge.false {
+      background: #f56565;
     }
 
     .actions {
@@ -191,74 +281,146 @@
       cursor: not-allowed;
     }
 
-    .empty-state {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+    .btn-finish {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      text-align: center;
-      padding: 40px;
+      grid-column: 1 / -1;
+      display: none;
     }
 
-    .empty-state-icon {
-      font-size: 64px;
+    .btn-finish.show { display: flex; }
+
+    /* Summary Screen */
+    .summary-screen {
+      position: absolute;
+      inset: 12px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      display: none;
+      flex-direction: column;
+      padding: 24px;
+      z-index: 40;
+      overflow-y: auto;
+    }
+
+    .summary-screen.show { display: flex; }
+
+    .summary-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #2d3748;
       margin-bottom: 16px;
-      opacity: 0.9;
+      text-align: center;
     }
 
-    .done-screen {
+    .summary-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: #f7fafc;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #718096;
+      margin-top: 4px;
+    }
+
+    .stat-box.valid .stat-number { color: #48bb78; }
+    .stat-box.false .stat-number { color: #f56565; }
+
+    .summary-list {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 16px;
+    }
+
+    .summary-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      gap: 12px;
+    }
+
+    .summary-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #e2e8f0;
+    }
+
+    .summary-info {
+      flex: 1;
+    }
+
+    .summary-name {
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 14px;
+    }
+
+    .summary-detail {
+      font-size: 12px;
+      color: #718096;
+    }
+
+    .summary-status {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .summary-status.valid {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .summary-status.false {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .syncing-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(255,255,255,0.98);
+      background: rgba(255,255,255,0.95);
       display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      text-align: center;
-      padding: 40px;
       z-index: 100;
     }
 
-    .done-screen.show { display: flex; }
+    .syncing-overlay.show { display: flex; }
 
-    .done-icon {
-      width: 80px;
-      height: 80px;
-      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    .sync-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #667eea;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 40px;
-      color: white;
+      animation: spin 1s linear infinite;
       margin-bottom: 20px;
-      box-shadow: 0 8px 24px rgba(72, 187, 120, 0.3);
     }
 
-    .done-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: #2d3748;
-      margin-bottom: 8px;
-    }
-
-    .done-text {
-      color: #718096;
-      margin-bottom: 32px;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 14px 32px;
-      border: none;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .error-toast {
       position: fixed;
@@ -291,57 +453,93 @@
     </select>
   </div>
 
-  <div class="main" id="mainContainer">
+  <div class="main">
+    <!-- Preload Screen -->
+    <div class="preload-screen" id="preloadScreen">
+      <div class="preload-icon">📥</div>
+      <div class="preload-text">Mengunduh Foto...</div>
+      <div class="preload-subtext" id="preloadSubtext">0 MB / 0 MB</div>
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-text" id="progressText">0 / 0</div>
+    </div>
+
+    <!-- Empty State -->
     <div class="empty-state" id="emptyState">
       <div class="empty-state-icon">👆</div>
       <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Pilih Kelas</div>
-      <div style="opacity: 0.8;">Silakan pilih kelas dari dropdown di atas</div>
+      <div style="opacity: 0.8;">Silakan pilih kelas dari dropdown</div>
     </div>
 
-    <div class="card" id="app" style="display: none;">
-      <div class="photo-container">
-        <div class="photo-placeholder" id="placeholder">
-          <div class="spinner"></div>
-          <div style="font-size: 14px;">Memuat foto...</div>
-        </div>
+    <!-- Validation Card -->
+    <div class="card" id="validationCard">
+      <div class="photo-container" id="photoContainer">
+        <div class="nav-hint prev" id="hintPrev">‹</div>
         <img id="photo" alt="Foto Siswa">
+        <div class="nav-hint next" id="hintNext">›</div>
       </div>
       
       <div class="info-bar">
         <div class="student-name" id="studentName">-</div>
         <div class="student-meta">
           <span id="studentClass">-</span>
-          <span class="badge" id="counterBadge">1/25</span>
+          <span class="badge" id="statusBadge">1/25</span>
         </div>
       </div>
 
       <div class="actions">
-        <button class="btn btn-benar" id="btnBenar" onclick="handleBenar()">
-          ✅ Benar
-        </button>
-        <button class="btn btn-salah" id="btnSalah" onclick="handleSalah()">
-          ❌ Salah
-        </button>
+        <button class="btn btn-benar" id="btnBenar" onclick="markValid()">✓ Benar</button>
+        <button class="btn btn-salah" id="btnSalah" onclick="markInvalid()">✕ Salah</button>
+        <button class="btn btn-finish" id="btnFinish" onclick="showSummary()">Selesai & Review →</button>
       </div>
+    </div>
+
+    <!-- Summary Screen -->
+    <div class="summary-screen" id="summaryScreen">
+      <div class="summary-title">📋 Ringkasan Validasi</div>
+      
+      <div class="summary-stats">
+        <div class="stat-box valid">
+          <div class="stat-number" id="statValid">0</div>
+          <div class="stat-label">Benar</div>
+        </div>
+        <div class="stat-box false">
+          <div class="stat-number" id="statFalse">0</div>
+          <div class="stat-label">Salah</div>
+        </div>
+      </div>
+
+      <div class="summary-list" id="summaryList"></div>
+
+      <button class="btn btn-finish show" onclick="syncAll()">
+        🚀 Kirim ke Server
+      </button>
+      <button class="btn" onclick="backToValidation()" style="background: #e2e8f0; color: #4a5568; margin-top: 8px;">
+        ← Kembali
+      </button>
     </div>
   </div>
 
-  <div class="done-screen" id="doneScreen">
-    <div class="done-icon">✓</div>
-    <div class="done-title">Selesai!</div>
-    <div class="done-text">Semua foto sudah divalidasi</div>
-    <button class="btn-primary" onclick="resetApp()">Kembali</button>
+  <!-- Syncing Overlay -->
+  <div class="syncing-overlay" id="syncingOverlay">
+    <div class="sync-spinner"></div>
+    <div style="font-size: 18px; font-weight: 600; color: #2d3748;">Mengirim data...</div>
+    <div style="font-size: 14px; color: #718096; margin-top: 8px;">Jangan tutup halaman</div>
   </div>
 
-  <div class="error-toast" id="errorToast">Error message</div>
+  <div class="error-toast" id="errorToast">Error</div>
 
   <script>
     const API = "https://script.google.com/macros/s/AKfycbzwgwoKQNXSWn7BrwlzZe1XmVlY0JnGgA6CKY7cjVUXols6Oo_7IyBIiuVDmoQh__wO/exec";
     
     let allData = [];
-    let currentList = [];
+    let currentClass = [];
+    let preloadedPhotos = new Map(); // row -> blobUrl
+    let validationResults = new Map(); // row -> {type, input}
     let currentIndex = 0;
     let isProcessing = false;
+    let touchStartX = 0;
 
     async function init() {
       try {
@@ -358,115 +556,223 @@
           select.appendChild(opt);
         });
 
-        select.addEventListener("change", startValidation);
+        select.addEventListener("change", handleClassSelect);
       } catch (err) {
         showError("Gagal memuat data");
         console.error(err);
       }
     }
 
-    function startValidation() {
+    async function handleClassSelect() {
       const selectedClass = document.getElementById("kelasSelect").value;
       if (!selectedClass) {
-        document.getElementById('emptyState').style.display = 'flex';
-        document.getElementById('app').style.display = 'none';
+        resetView();
         return;
       }
 
-      currentList = allData.filter(d => String(d.kelas || "").trim() === selectedClass);
+      currentClass = allData.filter(d => String(d.kelas || "").trim() === selectedClass);
+      validationResults.clear();
+      preloadedPhotos.clear();
       currentIndex = 0;
 
       document.getElementById('emptyState').style.display = 'none';
-      document.getElementById('app').style.display = 'flex';
+      document.getElementById('preloadScreen').classList.add('show');
+      
+      await preloadAllPhotos();
+      
+      document.getElementById('preloadScreen').classList.remove('show');
+      document.getElementById('validationCard').classList.add('show');
       showCurrent();
     }
 
+    async function preloadAllPhotos() {
+      const total = currentClass.length;
+      let loaded = 0;
+      let totalBytes = 0;
+
+      const updateProgress = () => {
+        const percent = (loaded / total) * 100;
+        document.getElementById('progressBar').style.width = percent + '%';
+        document.getElementById('progressText').textContent = `${loaded} / ${total}`;
+        document.getElementById('preloadSubtext').textContent = `${(totalBytes / 1024 / 1024).toFixed(2)} MB diunduh`;
+      };
+
+      updateProgress();
+
+      // Load sequentially for smoother progress bar
+      for (const student of currentClass) {
+        try {
+          const photoUrl = String(student.foto || "").trim();
+          if (photoUrl) {
+            const response = await fetch(photoUrl);
+            const blob = await response.blob();
+            totalBytes += blob.size;
+            const blobUrl = URL.createObjectURL(blob);
+            preloadedPhotos.set(student.row, blobUrl);
+          }
+        } catch (err) {
+          console.error("Failed to preload:", student.nama, err);
+        }
+        
+        loaded++;
+        updateProgress();
+      }
+    }
+
     function showCurrent() {
-      if (currentIndex >= currentList.length) {
-        document.getElementById('doneScreen').classList.add('show');
+      if (currentIndex >= currentClass.length) {
+        showSummary();
         return;
       }
 
-      const student = currentList[currentIndex];
+      const student = currentClass[currentIndex];
       const img = document.getElementById("photo");
-      const placeholder = document.getElementById("placeholder");
-
-      // Reset
-      img.classList.remove("show");
-      placeholder.style.display = "flex";
       
+      // Set photo from preloaded cache or placeholder
+      const blobUrl = preloadedPhotos.get(student.row);
+      img.src = blobUrl || "";
+      
+      // Update info
       document.getElementById("studentName").textContent = student.nama;
       document.getElementById("studentClass").textContent = student.kelas;
-      document.getElementById("counterBadge").textContent = `${currentIndex + 1}/${currentList.length}`;
-
-      const photoUrl = String(student.foto || "").trim();
-
-      if (!photoUrl) {
-        placeholder.innerHTML = `<div style="color: #e53e3e;">📷 Foto tidak tersedia</div>`;
-        return;
+      
+      // Update badge
+      const badge = document.getElementById("statusBadge");
+      const result = validationResults.get(student.row);
+      
+      if (result) {
+        badge.textContent = result.type === "valid" ? "✓ Benar" : "✕ Salah";
+        badge.className = "badge " + result.type;
+      } else {
+        badge.textContent = `${currentIndex + 1} / ${currentClass.length}`;
+        badge.className = "badge";
       }
 
-      const tester = new Image();
-      tester.onload = () => {
-        img.src = photoUrl;
-        img.classList.add("show");
-        placeholder.style.display = "none";
-      };
-      tester.onerror = () => {
-        placeholder.innerHTML = `<div style="color: #e53e3e;">❌ Gagal memuat foto</div>`;
-      };
-      tester.src = photoUrl;
+      // Show/hide finish button
+      const allDone = currentClass.every(s => validationResults.has(s.row));
+      document.getElementById("btnFinish").classList.toggle("show", allDone);
+
+      // Update navigation hints
+      document.getElementById("hintPrev").classList.toggle("visible", currentIndex > 0);
+      document.getElementById("hintNext").classList.toggle("visible", currentIndex < currentClass.length - 1);
     }
 
-    async function handleBenar() {
+    function markValid() {
       if (isProcessing) return;
-      await submitValidation("valid");
+      const student = currentClass[currentIndex];
+      validationResults.set(student.row, { type: "valid" });
+      nextStudent();
     }
 
-    async function handleSalah() {
+    function markInvalid() {
       if (isProcessing) return;
+      const student = currentClass[currentIndex];
       
-      const correctName = prompt(`Nama sebenarnya?\n(Data: ${currentList[currentIndex].nama})`);
+      const correctName = prompt(`Nama sebenarnya?\n(Data: ${student.nama})`);
       if (!correctName?.trim()) return;
       
-      await submitValidation("false", correctName.trim());
+      validationResults.set(student.row, { 
+        type: "false", 
+        input: correctName.trim() 
+      });
+      nextStudent();
     }
 
-    async function submitValidation(type, inputName = "") {
-      isProcessing = true;
-      setButtonsEnabled(false);
+    function nextStudent() {
+      if (currentIndex < currentClass.length - 1) {
+        currentIndex++;
+        showCurrent();
+      } else {
+        showSummary();
+      }
+    }
 
-      const student = currentList[currentIndex];
+    function prevStudent() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        showCurrent();
+      }
+    }
+
+    function showSummary() {
+      const valid = Array.from(validationResults.values()).filter(r => r.type === "valid").length;
+      const falseCount = Array.from(validationResults.values()).filter(r => r.type === "false").length;
       
+      document.getElementById("statValid").textContent = valid;
+      document.getElementById("statFalse").textContent = falseCount;
+      
+      const list = document.getElementById("summaryList");
+      list.innerHTML = "";
+      
+      currentClass.forEach(student => {
+        const result = validationResults.get(student.row);
+        const blobUrl = preloadedPhotos.get(student.row);
+        
+        const item = document.createElement("div");
+        item.className = "summary-item";
+        item.innerHTML = `
+          <img class="summary-thumb" src="${blobUrl || ''}" alt="">
+          <div class="summary-info">
+            <div class="summary-name">${student.nama}</div>
+            <div class="summary-detail">${student.kelas}</div>
+          </div>
+          <div class="summary-status ${result?.type || ''}">
+            ${result ? (result.type === "valid" ? "✓" : "✕ " + result.input) : "-"}
+          </div>
+        `;
+        list.appendChild(item);
+      });
+      
+      document.getElementById("summaryScreen").classList.add("show");
+    }
+
+    function backToValidation() {
+      document.getElementById("summaryScreen").classList.remove("show");
+      showCurrent();
+    }
+
+    async function syncAll() {
+      document.getElementById("syncingOverlay").classList.add("show");
+      
+      const payload = Array.from(validationResults.entries()).map(([row, result]) => ({
+        row,
+        type: result.type,
+        input: result.input || ""
+      }));
+
       try {
         const res = await fetch(API, {
           method: "POST",
           body: JSON.stringify({
-            action: "submitValidation",
-            type: type,
-            row: student.row,
-            input: inputName
+            action: "bulkValidation",
+            data: payload
           })
         });
         
         const result = await res.json();
         if (result.status !== "ok") throw new Error(result.message);
-
-        currentIndex++;
-        showCurrent();
+        
+        // Cleanup blob URLs
+        preloadedPhotos.forEach(url => URL.revokeObjectURL(url));
+        
+        alert("✅ Data berhasil dikirim!");
+        location.reload();
         
       } catch (err) {
-        showError("Gagal menyimpan. Coba lagi.");
+        document.getElementById("syncingOverlay").classList.remove("show");
+        showError("Gagal mengirim: " + err.message);
         console.error(err);
-      } finally {
-        isProcessing = false;
-        setButtonsEnabled(true);
       }
     }
 
-    function setButtonsEnabled(enabled) {
-      document.getElementById("btnBenar").disabled = !enabled;
-      document.getElementById("btnSalah").disabled = !enabled;
+    function resetView() {
+      document.getElementById('emptyState').style.display = 'flex';
+      document.getElementById('validationCard').classList.remove('show');
+      document.getElementById('preloadScreen').classList.remove('show');
+      document.getElementById('summaryScreen').classList.remove('show');
+      currentClass = [];
+      validationResults.clear();
+      preloadedPhotos.clear();
     }
 
     function showError(msg) {
@@ -476,14 +782,32 @@
       setTimeout(() => toast.classList.remove("show"), 3000);
     }
 
-    function resetApp() {
-      document.getElementById('doneScreen').classList.remove('show');
-      document.getElementById('kelasSelect').value = "";
-      document.getElementById('emptyState').style.display = 'flex';
-      document.getElementById('app').style.display = 'none';
-      currentList = [];
-      currentIndex = 0;
-    }
+    // Touch/swipe handling for navigation
+    const photoContainer = document.getElementById("photoContainer");
+    
+    photoContainer.addEventListener("touchstart", (e) => {
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    photoContainer.addEventListener("touchend", (e) => {
+      const touchEndX = e.changedTouches[0].clientX;
+      const diff = touchStartX - touchEndX;
+      
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) nextStudent(); // Swipe left
+        else prevStudent(); // Swipe right
+      }
+    }, { passive: true });
+
+    // Click on hints
+    document.getElementById("hintPrev").addEventListener("click", (e) => {
+      e.stopPropagation();
+      prevStudent();
+    });
+    document.getElementById("hintNext").addEventListener("click", (e) => {
+      e.stopPropagation();
+      nextStudent();
+    });
 
     init();
   </script>
